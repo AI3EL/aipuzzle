@@ -4,9 +4,7 @@ from pathlib import Path
 from typing import Self
 
 import numpy as np
-import numpy.typing as npt
-import PIL
-import PIL.Image
+from PIL import Image
 
 # TODO: click unplaced pieces together --> create clusters if pieces
 
@@ -47,9 +45,9 @@ PieceID = int
 @dataclass
 class Piece:
     id_: PieceID
-    texture: npt.NDArray[np.uint8]
+    texture: Image.Image
     plugs: set[Side]
-    size: tuple[int, int]
+    size: tuple[int, int]  # (w, h)
 
 
 PuzzleSolution = dict[tuple[int, int], PieceID]
@@ -58,24 +56,20 @@ PuzzleSolution = dict[tuple[int, int], PieceID]
 class Puzzle:
     @classmethod
     def make_frome_image(cls, path: Path, w: int, h: int) -> Self:
-        img = PIL.Image.open(path)
+        img = Image.open(path)
         piece_width = img.width // w
         piece_height = img.height // h
         print(f"{(piece_width, piece_height)=}")
         if ((img.width % w) != 0) or ((img.height % h) != 0):
-            new_img_size = (piece_height * w, piece_width * h)
+            new_img_size = (piece_width * w, piece_height * h)
             print(f"resizing {img.size} -> {new_img_size}")
             img = img.resize(new_img_size)
-        img_arr = np.array(img)
 
         pieces = []
         solution = {}
         id_ = 0
         for x in range(w):
             for y in range(h):
-                slice_x = slice(x * piece_width, (x + 1) * piece_width)
-                slice_y = slice(y * piece_height, (y + 1) * piece_height)
-
                 plugs = set()
                 if x != 0:
                     plugs.add(Side.LEFT)
@@ -86,7 +80,8 @@ class Puzzle:
                 if y != h - 1:
                     plugs.add(Side.UP)
 
-                pieces.append(Piece(id_, img_arr[slice_x, slice_y], plugs, (piece_width, piece_height)))
+                crop_box = (x * piece_width, y * piece_height, (x + 1) * piece_width, (y + 1) * piece_height)
+                pieces.append(Piece(id_, img.crop(crop_box), plugs, (piece_width, piece_height)))
                 solution[(x, y)] = id_
                 id_ += 1
 
@@ -99,8 +94,31 @@ class Puzzle:
         self._solution = solution
         self._piece_id_to_pos = dict([(v, k) for k, v in solution.items()])
 
-    def size(self) -> tuple[int, int]:
-        return (self.dims[0] * self.piece_size[0], self.dims[1] * self.piece_size[1])
+        self._failed_click_counter = 0
+        self._succesful_click_counter = 0
+
+    def reset(self):
+        self._failed_click_counter = 0
+        self._succesful_click_counter = 0
+
+    def is_solution(self, solution_candidate: PuzzleSolution):
+        return self._solution == solution_candidate
+
+    def get_stats(self) -> dict[str, str]:
+        click_count = self._failed_click_counter + self._succesful_click_counter
+        success_rate = self._succesful_click_counter / click_count if click_count else np.nan
+        return {
+            "failed_click_counter": str(self._failed_click_counter),
+            "succesful_click_counter": str(self._succesful_click_counter),
+            "click_count": str(click_count),
+            "click_success_rate": f"{success_rate:.3f}",
+        }
+
+    def get_image_w(self) -> int:
+        return self.dims[0] * self.piece_size[0]
+
+    def get_image_h(self) -> int:
+        return self.dims[1] * self.piece_size[1]
 
     def n_pieces(self) -> int:
         return len(self.pieces)
@@ -117,7 +135,14 @@ class Puzzle:
         delta_pos = np.array(self._piece_id_to_pos[candidate_piece.id_], np.int32) - np.array(
             self._piece_id_to_pos[ref_piece.id_], np.int32
         )
-        return (delta_pos == np.array(side_to_delta_pos(side), np.int32)).all()
+        out = (delta_pos == np.array(side_to_delta_pos(side), np.int32)).all()
+
+        if out:
+            self._succesful_click_counter += 1
+        else:
+            self._failed_click_counter += 1
+
+        return out
 
     def get_corner_pieces(self) -> set[PieceID]:
         return set(
@@ -142,9 +167,9 @@ class Puzzle:
             )
         )
 
-    def piece_layout_to_image(self, piece_layout: dict[tuple[int, int], Piece]) -> PIL.Image.Image:
-        out = np.zeros(self.size() + (3,), np.uint8)
+    def piece_layout_to_image(self, piece_layout: dict[tuple[int, int], Piece]) -> Image.Image:
+        out = np.zeros((self.get_image_h(), self.get_image_w(), 3), np.uint8)
         for (i, j), piece in piece_layout.items():
             w, h = piece.size
-            out[i * w : (i + 1) * w, j * h : (j + 1) * h] = piece.texture
-        return PIL.Image.fromarray(out)
+            out[j * h : (j + 1) * h, i * w : (i + 1) * w] = np.array(piece.texture)
+        return Image.fromarray(out)

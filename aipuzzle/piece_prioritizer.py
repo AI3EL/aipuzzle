@@ -1,19 +1,12 @@
 import random
 from typing import Protocol
 
-import numpy as np
-import numpy.typing as npt
-
+from aipuzzle.img_embedder import KeyQueryPredicter
 from aipuzzle.puzzle import Piece, Side
 
 
 class PiecePrioritizer(Protocol):
     def sort(self, ref_piece: Piece, candidates: list[Piece], sides: set[Side]) -> list[tuple[Piece, Side]]: ...
-
-
-class KeyQueryPredicter(Protocol):
-    def get_keys(self, piece: list[Piece], sides: set[Side]) -> dict[Side, npt.NDArray[np.float32]]: ...
-    def get_query(self, piece: Piece, sides: set[Side]) -> dict[Side, npt.NDArray[np.float32]]: ...
 
 
 class RandomPiecePrioritizer(PiecePrioritizer):
@@ -30,9 +23,11 @@ class KeyQueryPiecePrioritizer(PiecePrioritizer):
     def sort(self, ref_piece: Piece, candidates: list[Piece], sides: set[Side]) -> list[tuple[Piece, Side]]:
         query = self.predicter.get_query(ref_piece, sides)
         keys = self.predicter.get_keys(candidates, sides)
-        candidate_ids = [piece.id_ for piece in candidates]
         affinities = []
-        for side in Side:
-            affinities.extend([(affinity, i, side) for i, affinity in zip(candidate_ids, query[side].dot(keys[side]))])
-        sorted_affinities = sorted(affinities, key=lambda x: -x[0])  # type: ignore
-        return [(i, side) for (_affinity, i, side) in sorted_affinities]
+        for side in sides:
+            affinities.extend(
+                [(affinity, piece, side) for piece, affinity in zip(candidates, keys[side].dot(query[side]))]
+            )
+        sorting_fn = lambda x: -x[0]  # type: ignore
+        sorted_affinities = sorted(affinities, key=sorting_fn)
+        return [(piece, side) for (_affinity, piece, side) in sorted_affinities]
