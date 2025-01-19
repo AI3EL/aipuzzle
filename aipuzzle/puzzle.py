@@ -39,6 +39,11 @@ def side_to_delta_pos(side: Side) -> tuple[int, int]:
     raise ValueError
 
 
+def get_side_shifted(pos: tuple[int, int], side: Side) -> tuple[int, int]:
+    arr_click_pos = np.array(pos, np.int32) + np.array(side_to_delta_pos(side), np.int32)
+    return int(arr_click_pos[0]), int(arr_click_pos[1])
+
+
 PieceID = int
 
 

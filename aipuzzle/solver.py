@@ -1,10 +1,15 @@
 import random
 from typing import Protocol
 
-import numpy as np
-
 from aipuzzle.piece_prioritizer import PiecePrioritizer
-from aipuzzle.puzzle import PieceID, Puzzle, PuzzleSolution, Side, get_opposite_side, side_to_delta_pos
+from aipuzzle.puzzle import (
+    PieceID,
+    Puzzle,
+    PuzzleSolution,
+    Side,
+    get_opposite_side,
+    get_side_shifted,
+)
 
 
 class Solver(Protocol):
@@ -58,10 +63,7 @@ class PrioritizedBruteforceSolver(Solver):
                     continue
 
                 found = True
-                arr_click_pos = np.array(ref_piece_pos, np.int32) + np.array(
-                    side_to_delta_pos(unplugged_side), np.int32
-                )
-                click_pos = (int(arr_click_pos[0]), int(arr_click_pos[1]))
+                click_pos = get_side_shifted(ref_piece_pos, unplugged_side)
                 solution[click_pos] = candidate_piece.id_
                 placed_pos[candidate_piece.id_] = click_pos
                 placed_and_unplugged.add(candidate_piece.id_)
@@ -69,9 +71,7 @@ class PrioritizedBruteforceSolver(Solver):
 
                 # Marking as plugged neighbours and candidate (including ref )
                 for side in Side:
-                    neigh_pos = tuple(
-                        map(int, np.array(click_pos, np.int32) + np.array(side_to_delta_pos(side), np.int32))
-                    )
+                    neigh_pos = get_side_shifted(click_pos, side)
                     if neigh_pos in solution:
                         unpluggeds[candidate_piece.id_].remove(side)
                         # print(f"Plugged {candidate_piece.id_} {side}")
