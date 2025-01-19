@@ -1,0 +1,41 @@
+[tool.poetry]
+authors = ["AI3EL <abel.adary@gmail.com>"]
+description = "Solving puzzles with AI"
+name = "ai-puzzle"
+version = "0.1.0"
+packages = [{ include = "aipuzzle" }]
+
+
+[tool.poetry.dependencies]
+python = "3.12.*"
+numpy = "^2.2.2"
+pillow = "^11.1.0"
+
+[tool.poetry.extras]
+notebook = ["ipykernel"]
+
+[build-system]
+build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core"]
+
+[tool.pyright]
+typeCheckingMode = "strict"
+reportUnknownMemberType = false
+reportUnknownArgumentType = false
+reportUnknownVariableType = false
+reportMissingModuleSource = false
+reportUninitializedInstanceVariable = "error"
+reportUnnecessaryTypeIgnoreComment = "error"
+include = ["aipuzzle"]
+
+[tool.ruff]
+# Default config: https://docs.astral.sh/ruff/configuration/
+line-length = 120
+target-version = "py312"
+# For command line only, not extension
+include = ["aipuzzle/**/*.py"]
+
+[tool.ruff.lint]
+# All lint rules: https://docs.astral.sh/ruff/rules/
+select = ["I001"] # Import sorting (I001)
+
