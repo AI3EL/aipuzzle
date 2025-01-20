@@ -1,0 +1,2 @@
+- heatmap of which piece are harder --> just plot the rank of the solution in affinities
+- click unplaced pieces together --> create clusters if pieces

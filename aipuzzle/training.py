@@ -1,5 +1,7 @@
 import torch
 import torch.nn.functional as F
+from datasets import Image, load_dataset
+from torch.utils.data import DataLoader
 
 from aipuzzle.puzzle import PieceID, Puzzle, Side, get_side_shifted
 
@@ -33,3 +35,26 @@ def get_key_query_loss(
         key_loss = F.cross_entropy(logits.T, targets.T, reduction="none")  # WARNING: was custom implem in source
         loss = loss + ((key_loss + query_loss) / 2.0).mean()  # shape: (batch_size)
     return loss
+
+
+def transforms(examples):
+    examples["pixel_values"] = examples["image"]
+    return examples
+
+
+def collate_fn(examples):
+    images = []
+    labels = []
+    for example in examples:
+        images.append((example["pixel_values"]))
+        labels.append(example["labels"])
+
+    pixel_values = torch.stack(images)
+    labels = torch.tensor(labels)
+    return {"pixel_values": pixel_values, "labels": labels}
+
+
+if __name__ == "__main__":
+    dataset = load_dataset("imagenet-1k", split="train", trust_remote_code=True)
+    dataset = dataset.cast_column("image", Image(mode="RGB"))
+    dataloader = DataLoader(dataset, collate_fn=collate_fn, batch_size=4)

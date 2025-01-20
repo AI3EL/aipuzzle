@@ -6,8 +6,6 @@ from typing import Self
 import numpy as np
 from PIL import Image
 
-# TODO: click unplaced pieces together --> create clusters if pieces
-
 
 class Side(enum.Enum):
     UP = 1

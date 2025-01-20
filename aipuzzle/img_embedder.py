@@ -15,7 +15,6 @@ class KeyQueryPredicter(Protocol):
     def get_keys(self, pieces: list[Piece], sides: set[Side]) -> dict[Side, npt.NDArray[np.float32]]: ...
 
 
-# TODO: add caching
 class PretrainedImgEmbedder(KeyQueryPredicter):
     """Returning a copy of the same embedding on all sides, for query and keys"""
 
