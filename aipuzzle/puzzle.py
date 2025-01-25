@@ -58,8 +58,11 @@ PuzzleSolution = dict[tuple[int, int], PieceID]
 
 class Puzzle:
     @classmethod
-    def make_frome_image(cls, path: Path, w: int, h: int) -> Self:
-        img = Image.open(path)
+    def make_frome_img_file(cls, path: Path, w: int, h: int) -> Self:
+        return cls.make_frome_img(Image.open(path), w, h)
+
+    @classmethod
+    def make_frome_img(cls, img: Image.Image, w: int, h: int) -> Self:
         piece_width = img.width // w
         piece_height = img.height // h
         print(f"{(piece_width, piece_height)=}")
