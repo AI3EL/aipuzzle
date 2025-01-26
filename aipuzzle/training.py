@@ -38,10 +38,10 @@ def collate_fn(examples: list[tuple[torch.Tensor, torch.Tensor, torch.Tensor]]):
 
 
 class PieceModel(torch.nn.Module):
-    def __init__(self, backbone: torch.nn.Module):
+    def __init__(self, backbone: torch.nn.Module, n_backbone_out: int):
         super().__init__()
         self.backbone = backbone
-        self.head = torch.nn.Linear(1000, 4 * 256)
+        self.head = torch.nn.Linear(n_backbone_out, 4 * 256)
 
     def forward(self, x: torch.Tensor):
         return self.head(self.backbone(x)).reshape(-1, 4, 256)

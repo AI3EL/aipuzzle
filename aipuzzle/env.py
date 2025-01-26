@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any, Self
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw
 
 
 class Side(enum.Enum):
@@ -65,12 +65,21 @@ class PuzzleObs:
     def render(self) -> Image.Image:
         image_w = self.dims[0] * self.pieces[0].size[0]
         image_h = self.dims[1] * self.pieces[0].size[1]
-        out = np.zeros((image_h, image_w, 3), np.uint8)
+        arr = np.zeros((image_h, image_w, 3), np.uint8)
         for (i, j), piece_id in self.layout.items():
             piece = self.pieces[piece_id]
             w, h = piece.size
-            out[j * h : (j + 1) * h, i * w : (i + 1) * w] = np.array(piece.texture)
-        return Image.fromarray(out)
+            arr[j * h : (j + 1) * h, i * w : (i + 1) * w] = np.array(piece.texture)
+        img = Image.fromarray(arr)
+
+        # Grid
+        draw = ImageDraw.Draw(img)
+        for i in range(self.dims[0]):
+            draw.line((i * self.pieces[0].size[0], 0, i * self.pieces[0].size[0], image_h))
+        for j in range(self.dims[1]):
+            draw.line((0, j * self.pieces[0].size[1], image_w, j * self.pieces[0].size[1]))
+
+        return img
 
 
 @dataclass
@@ -118,7 +127,7 @@ class PuzzleEnv:
 
     def __init__(self, pieces: list[Piece], dimensions: tuple[int, int], solution: PuzzleSolution):
         self._pieces = pieces
-        self._dims = dimensions
+        self.dims = dimensions
         self._piece_size = pieces[0].size
         self._solution = solution
         self._piece_id_to_pos = dict([(v, k) for k, v in solution.items()])
@@ -127,7 +136,7 @@ class PuzzleEnv:
         self._piece_to_layout_pos: dict[PieceID, tuple[int, int]] = {}
 
     def _get_obs(self) -> PuzzleObs:
-        return PuzzleObs(self._pieces, self._layout.copy(), self._dims)
+        return PuzzleObs(self._pieces, self._layout.copy(), self.dims)
 
     def reset(self) -> PuzzleObs:
         self._layout = {}

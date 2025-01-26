@@ -5,7 +5,7 @@ import numpy.typing as npt
 import torch
 from PIL import Image
 
-from aipuzzle.env import Piece, PieceID, Side
+from aipuzzle.env import Piece, PieceID, PuzzleEnv, Side, get_side_shifted
 
 
 class PieceSideEmbedder(Protocol):
@@ -59,3 +59,27 @@ class NNPieceSideEmbedder(PieceSideEmbedder):
             axis=0,
         )
         return {side: embeddings[:, side.value - 1] for side in sides}
+
+
+def get_difficulty_heatmap(
+    puzzle: PuzzleEnv, query_embedder: PieceSideEmbedder, key_embedder: PieceSideEmbedder
+) -> Image.Image:
+    pieces = puzzle.get_pieces()
+    solution = puzzle.get_solution()
+    piece_w, piece_h = pieces[0].size
+    image_w = puzzle.dims[0] * piece_w
+    image_h = puzzle.dims[1] * piece_h
+    arr = np.zeros((image_h, image_w, 3), np.float32)
+
+    query_embeddings = query_embedder.predict(pieces, set(Side))
+    key_embeddings = key_embedder.predict(pieces, set(Side))
+    for pos, piece_id in solution.items():
+        piece = pieces[piece_id]
+        affinity = 0
+        for side in piece.plugs:
+            neigh_piece_id = solution[get_side_shifted(pos, side)]
+            affinity += query_embeddings[side][piece_id].dot(key_embeddings[side][neigh_piece_id])
+        affinity /= len(piece.plugs)
+        arr[pos[1] * piece_h : (pos[1] + 1) * piece_h, pos[0] * piece_w : (pos[0] + 1) * piece_w] = affinity
+    arr = (arr / arr.max() * 255).astype(np.uint8)
+    return Image.fromarray(arr)
