@@ -24,8 +24,8 @@ print(f"Took {len(obs_list)} attempts")
 
 puzzle.reset()
 start_time = time.time()
-query_model = PieceModel()
-key_model = PieceModel()
+query_model = PieceModel(timm.create_model("timm/resnet18.a1_in1k", pretrained=True))
+key_model = PieceModel(timm.create_model("timm/resnet18.a1_in1k", pretrained=True))
 transform = create_transform(**resolve_data_config(query_model.backbone.pretrained_cfg, model=query_model.backbone))
 
 obs_list = AdjacentPuzzleWorker(
@@ -51,7 +51,7 @@ print(f"Took {len(obs_list)} attempts")
 # ]
 images = [Image.open(Path("res", "IMG_0901.JPG")).resize((2240, 2240))]
 dataloader = DataLoader(PuzzleDataset(images, (10, 10)), collate_fn=collate_fn, batch_size=32, shuffle=True)
-train(query_model, key_model, dataloader, 10)
+train(query_model, key_model, dataloader, 2)
 
 
 obs_list = AdjacentPuzzleWorker(

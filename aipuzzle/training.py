@@ -39,13 +39,13 @@ def collate_fn(examples: list[tuple[torch.Tensor, torch.Tensor, torch.Tensor]]):
 
 
 class PieceModel(torch.nn.Module):
-    def __init__(self):
+    def __init__(self, backbone: torch.nn.Module):
         super().__init__()
-        self.backbone = timm.create_model("timm/vit_base_patch16_clip_224.openai", pretrained=True)  # type: ignore
-        self.head = torch.nn.Linear(512, 4 * 512)
+        self.backbone = backbone
+        self.head = torch.nn.Linear(1000, 4 * 256)
 
     def forward(self, x):
-        return self.head(self.backbone(x)).reshape(-1, 4, 512)
+        return self.head(self.backbone(x)).reshape(-1, 4, 256)
 
 
 class PuzzleDataset(Dataset[tuple[torch.Tensor, torch.Tensor, torch.Tensor]]):
@@ -77,14 +77,17 @@ class PuzzleDataset(Dataset[tuple[torch.Tensor, torch.Tensor, torch.Tensor]]):
 def train(query_model: torch.nn.Module, key_model: torch.nn.Module, dataloader: DataLoader, n_epoch: int):
     query_model.train(), key_model.train()
     opt = torch.optim.Adam(list(query_model.parameters()) + list(key_model.parameters()))
-    for _ in range(n_epoch):
+    for i_epoch in range(n_epoch):
+        print(i_epoch)
         for query_imgs, key_imgs, sides in dataloader:
+            batch_size = query_imgs.shape[0]
             query_embeddings = query_model.forward(query_imgs)
             key_embeddings = key_model.forward(key_imgs)
             loss = get_key_query_loss(
-                query_embeddings[range(dataloader.batch_size), sides],
-                key_embeddings[range(dataloader.batch_size), sides],
+                query_embeddings[range(batch_size), sides],
+                key_embeddings[range(batch_size), sides],
             )
             opt.zero_grad()
             loss.backward()
             opt.step()
+            print(loss)
