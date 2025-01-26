@@ -81,32 +81,32 @@ class PuzzleAction:
 
 class PuzzleEnv:
     @classmethod
-    def make_frome_img_file(cls, path: Path, w: int, h: int) -> Self:
-        return cls.make_frome_img(Image.open(path), w, h)
+    def make_frome_img_file(cls, path: Path, n_w: int, n_h: int) -> Self:
+        return cls.make_frome_img(Image.open(path), n_w, n_h)
 
     @classmethod
-    def make_frome_img(cls, img: Image.Image, w: int, h: int) -> Self:
-        piece_width = img.width // w
-        piece_height = img.height // h
+    def make_frome_img(cls, img: Image.Image, n_w: int, n_h: int) -> Self:
+        piece_width = img.width // n_w
+        piece_height = img.height // n_h
         print(f"{(piece_width, piece_height)=}")
-        if ((img.width % w) != 0) or ((img.height % h) != 0):
-            new_img_size = (piece_width * w, piece_height * h)
+        if ((img.width % n_w) != 0) or ((img.height % n_h) != 0):
+            new_img_size = (piece_width * n_w, piece_height * n_h)
             print(f"resizing {img.size} -> {new_img_size}")
             img = img.resize(new_img_size)
 
         pieces = []
         solution = {}
         id_ = 0
-        for x in range(w):
-            for y in range(h):
+        for x in range(n_w):
+            for y in range(n_h):
                 plugs = set()
                 if x != 0:
                     plugs.add(Side.LEFT)
-                if x != w - 1:
+                if x != n_w - 1:
                     plugs.add(Side.RIGHT)
                 if y != 0:
                     plugs.add(Side.DOWN)
-                if y != h - 1:
+                if y != n_h - 1:
                     plugs.add(Side.UP)
 
                 crop_box = (x * piece_width, y * piece_height, (x + 1) * piece_width, (y + 1) * piece_height)
@@ -114,7 +114,7 @@ class PuzzleEnv:
                 solution[(x, y)] = id_
                 id_ += 1
 
-        return cls(pieces, (w, h), solution)
+        return cls(pieces, (n_w, n_h), solution)
 
     def __init__(self, pieces: list[Piece], dimensions: tuple[int, int], solution: PuzzleSolution):
         self._pieces = pieces
@@ -135,7 +135,6 @@ class PuzzleEnv:
         return self._get_obs()
 
     def step(self, action: PuzzleAction) -> tuple[PuzzleObs, float, bool, dict[str, Any]]:
-        print(action)
         self._check_action(action)
         if not self._is_insertable(action):
             return self._get_obs(), 0.0, False, {}
@@ -168,6 +167,9 @@ class PuzzleEnv:
 
     def get_solution(self) -> PuzzleSolution:
         return self._solution
+
+    def get_pieces(self) -> list[Piece]:
+        return self._pieces
 
 
 def get_any_corner(obs: PuzzleObs) -> Piece:

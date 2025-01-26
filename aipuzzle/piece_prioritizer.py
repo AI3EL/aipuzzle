@@ -2,7 +2,7 @@ import random
 from typing import Protocol
 
 from aipuzzle.env import Piece, Side
-from aipuzzle.img_embedder import KeyQueryPredicter
+from aipuzzle.img_embedder import PieceSideEmbedder
 
 
 class PiecePrioritizer(Protocol):
@@ -17,12 +17,13 @@ class RandomPiecePrioritizer(PiecePrioritizer):
 
 
 class KeyQueryPiecePrioritizer(PiecePrioritizer):
-    def __init__(self, predicter: KeyQueryPredicter):
-        self.predicter = predicter
+    def __init__(self, query_predicter: PieceSideEmbedder, key_predicter: PieceSideEmbedder):
+        self.query_predicter = query_predicter
+        self.key_predicter = key_predicter
 
     def sort(self, ref_piece: Piece, candidates: list[Piece], sides: set[Side]) -> list[tuple[Piece, Side]]:
-        query = self.predicter.get_query(ref_piece, sides)
-        keys = self.predicter.get_keys(candidates, sides)
+        query = {side: embeddings[0] for side, embeddings in self.query_predicter.predict([ref_piece], sides).items()}
+        keys = self.key_predicter.predict(candidates, sides)
         affinities = []
         for side in sides:
             affinities.extend(
