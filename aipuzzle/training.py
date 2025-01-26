@@ -1,8 +1,7 @@
-import timm
 import torch
 import torch.nn.functional as F
-import torchvision.transforms.functional
-from datasets import Image
+import torchvision.transforms.functional  # type: ignore
+from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 
 from aipuzzle.env import PieceID, PuzzleEnv, Side, get_side_shifted
@@ -44,12 +43,12 @@ class PieceModel(torch.nn.Module):
         self.backbone = backbone
         self.head = torch.nn.Linear(1000, 4 * 256)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
         return self.head(self.backbone(x)).reshape(-1, 4, 256)
 
 
 class PuzzleDataset(Dataset[tuple[torch.Tensor, torch.Tensor, torch.Tensor]]):
-    def __init__(self, images: list[Image], n_pieces: tuple[int, int]):
+    def __init__(self, images: list[Image.Image], n_pieces: tuple[int, int]):
         self._query_imgs = []
         self._key_imgs = []
         self._sides = []
@@ -70,12 +69,18 @@ class PuzzleDataset(Dataset[tuple[torch.Tensor, torch.Tensor, torch.Tensor]]):
     def __len__(self):
         return len(self._query_imgs)
 
-    def __getitem__(self, idx: int):
+    def __getitem__(self, idx: int) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         return self._query_imgs[idx], self._key_imgs[idx], self._sides[idx]
 
 
-def train(query_model: torch.nn.Module, key_model: torch.nn.Module, dataloader: DataLoader, n_epoch: int):
-    query_model.train(), key_model.train()
+def train(
+    query_model: torch.nn.Module,
+    key_model: torch.nn.Module,
+    dataloader: DataLoader[tuple[torch.Tensor, torch.Tensor, torch.Tensor]],
+    n_epoch: int,
+):
+    query_model.train()
+    key_model.train()
     opt = torch.optim.Adam(list(query_model.parameters()) + list(key_model.parameters()))
     for i_epoch in range(n_epoch):
         print(i_epoch)

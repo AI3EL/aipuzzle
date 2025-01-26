@@ -2,7 +2,6 @@ import time
 from pathlib import Path
 
 import timm
-from datasets import load_dataset
 from PIL import Image
 from timm.data import resolve_data_config  # type: ignore
 from timm.data.transforms_factory import create_transform
