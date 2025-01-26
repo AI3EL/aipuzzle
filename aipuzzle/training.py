@@ -5,7 +5,7 @@ import torchvision.transforms.functional
 from datasets import Image, load_dataset
 from torch.utils.data import DataLoader, Dataset
 
-from aipuzzle.puzzle import PieceID, Puzzle, Side, get_side_shifted
+from aipuzzle.env import PieceID, Puzzle, Side, get_side_shifted
 
 
 def get_labels(puzzle: Puzzle) -> dict[PieceID, dict[Side, PieceID]]:

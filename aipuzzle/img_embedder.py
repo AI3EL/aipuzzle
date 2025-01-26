@@ -7,7 +7,7 @@ import torch
 from timm.data import resolve_data_config  # type: ignore
 from timm.data.transforms_factory import create_transform
 
-from aipuzzle.puzzle import Piece, PieceID, Side
+from aipuzzle.env import Piece, PieceID, Side
 
 
 class KeyQueryPredicter(Protocol):

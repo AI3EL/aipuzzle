@@ -1,8 +1,8 @@
 import random
 from typing import Protocol
 
+from aipuzzle.env import Piece, Side
 from aipuzzle.img_embedder import KeyQueryPredicter
-from aipuzzle.puzzle import Piece, Side
 
 
 class PiecePrioritizer(Protocol):
